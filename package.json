@@ -1,0 +1,15 @@
+{
+  "name": "bangladeshi-parcel-tracker-project",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Repository tooling for the Bangladeshi Parcel Tracker npm library and its React example",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "npm --prefix packages/bangladeshi-parcel-tracker test",
+    "pack:check": "node scripts/pack-check.cjs",
+    "build:example": "npm --prefix examples/react-demo run build",
+    "validate": "npm run test && npm run pack:check"
+  }
+}

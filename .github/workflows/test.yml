@@ -1,0 +1,41 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: |
+            packages/bangladeshi-parcel-tracker/package-lock.json
+            examples/react-demo/package-lock.json
+      - name: Install npm library dependencies
+        working-directory: packages/bangladeshi-parcel-tracker
+        run: npm ci
+      - name: Test npm library
+        working-directory: packages/bangladeshi-parcel-tracker
+        run: npm test
+      - name: Validate npm package contents
+        working-directory: packages/bangladeshi-parcel-tracker
+        run: npm pack --dry-run
+      - name: Install React demo dependencies
+        working-directory: examples/react-demo
+        run: npm ci
+      - name: Build React demo
+        working-directory: examples/react-demo
+        run: npm run build

@@ -1,0 +1,46 @@
+{
+  "name": "bangladeshi-parcel-tracker",
+  "version": "1.3.0",
+  "description": "CommonJS parcel tracking clients for five Bangladeshi couriers",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "require": "./index.js",
+      "default": "./index.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "src",
+    "smoke.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test",
+    "smoke": "node smoke.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SecurityTalent/Bangladeshi-Parcel-Tracker.git"
+  },
+  "keywords": [
+    "parcel",
+    "tracking",
+    "Bangladesh",
+    "courier",
+    "Redx",
+    "Pathao",
+    "Rokomari",
+    "Steadfast",
+    "Sundarban"
+  ],
+  "author": "Md Mehedi Hasan (SecurityTalent)",
+  "license": "MIT"
+}

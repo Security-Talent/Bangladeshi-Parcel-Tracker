@@ -1,0 +1,20 @@
+{
+  "name": "bangladeshi-parcel-tracker-react-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "server": "node server.cjs",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "bangladeshi-parcel-tracker": "file:../../packages/bangladeshi-parcel-tracker",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "vite": "6.4.3"
+  }
+}
