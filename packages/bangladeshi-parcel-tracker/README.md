@@ -2,30 +2,32 @@
 
 Zero-dependency CommonJS tracking clients for RedX, Steadfast, Pathao, Rokomari, and Sundarban. The package calls courier website/API endpoints directly; endpoint availability and response formats are controlled by those providers and are not guaranteed by this package.
 
-## On this page
-
-- [Install and quick start](#requirements-and-install)
-- [Courier input requirements](#courier-details-and-legacy-api)
-- [Unified API and result format](#unified-api)
-- [Options](#options)
-- [Legacy API](#courier-details-and-legacy-api)
-- [Errors](#errors)
-- [TypeScript](#typescript)
-- [React project example](#react-project-example)
-- [Development and tests](#development-and-tests)
-- [Limitations and migration](#limitations-and-migration)
-
-## Requirements and install
+## Requirements
 
 Node.js 18 or later (uses the built-in `fetch` API).
+
+## Install
+
+In an existing Node.js project, run:
 
 ```sh
 npm install bangladeshi-parcel-tracker
 ```
 
-Use only tracking numbers and phone numbers you are authorized to use. Pathao and Rokomari requests require the recipient phone number according to their current tracking flow. No credentials are embedded in the library.
+To create a new project and install the package:
+
+```sh
+mkdir parcel-app
+cd parcel-app
+npm init -y
+npm install bangladeshi-parcel-tracker
+```
+
+The package has no runtime dependencies. Use only tracking numbers and phone numbers you are authorized to use. No courier credentials are embedded in the library.
 
 ### Quick start
+
+Create a file named `track.cjs` in your project, paste this example, and replace the sample tracking number:
 
 ```js
 const tracker = require("bangladeshi-parcel-tracker");
@@ -45,7 +47,13 @@ async function main() {
 main();
 ```
 
-For **Pathao** and **Rokomari**, include the recipient phone: `{ courier: "pathao", trackingNumber: "...", phone: "..." }`. The other three couriers need only a tracking number. See the [courier requirements](#courier-details-and-legacy-api) before choosing one.
+Run the example from your project folder:
+
+```sh
+node track.cjs
+```
+
+For **Pathao** and **Rokomari**, add the recipient phone number to the input. The other couriers need only a tracking number. See [supported couriers](#supported-couriers-and-legacy-api).
 
 ## Unified API
 
@@ -54,13 +62,17 @@ For **Pathao** and **Rokomari**, include the recipient phone: `{ courier: "patha
 ```js
 import tracker from "bangladeshi-parcel-tracker";
 
-const result = await tracker.track({
-  courier: "pathao",
-  trackingNumber: process.env.TRACKING_NUMBER,
-  phone: process.env.PARCEL_PHONE
-}, { timeoutMs: 8000 });
+async function main() {
+  const result = await tracker.track({
+    courier: "pathao",
+    trackingNumber: "YOUR_TRACKING_NUMBER",
+    phone: "+8801XXXXXXXXX"
+  }, { timeoutMs: 8000 });
 
-console.log(result.status.label);
+  console.log(result.status.label);
+}
+
+main();
 ```
 
 CommonJS and named ESM imports are also supported:
@@ -101,14 +113,24 @@ Common status codes: `PENDING`, `PICKED_UP`, `IN_TRANSIT`, `OUT_FOR_DELIVERY`, `
 
 ```js
 const controller = new AbortController();
-const result = await tracker.track({ courier: "redx", trackingNumber: "YOUR_TRACKING_NUMBER" }, {
-  timeoutMs: 10000,       // default 10000
-  retries: 1,             // default 0; transient GET requests only, max 5
-  retryDelayMs: 100,       // exponential backoff base with jitter
-  signal: controller.signal,
-  cacheTtlMs: 30000,       // default 0 (disabled)
-  bypassCache: false
-});
+
+async function main() {
+  const result = await tracker.track({
+    courier: "redx",
+    trackingNumber: "YOUR_TRACKING_NUMBER"
+  }, {
+    timeoutMs: 10000,
+    retries: 1,
+    retryDelayMs: 100,
+    signal: controller.signal,
+    cacheTtlMs: 30000,
+    bypassCache: false
+  });
+
+  console.log(result.status.label);
+}
+
+main();
 ```
 
 Options reference:
@@ -124,27 +146,31 @@ Options reference:
 
 Legacy methods accept `timeoutMs`, `retries`, `retryDelayMs`, and `signal` in their final options parameter; caching options apply only to `track()`. Retries are limited to GET-based RedX, Steadfast, and Rokomari lookups. POST-based Pathao and Sundarban requests are never retried. Cache is process-local, bounded to 500 entries, and keyed with a process-random salted digest; cached result contents may still include event text, so enable it only where appropriate. `bypassCache: true` forces a request. There is no persistent or distributed cache. A timeout applies to each attempt, so retries can extend total elapsed time.
 
-## Courier details and legacy API
+## Supported couriers and legacy API
 
 Legacy functions remain available and continue to resolve to provider-specific response data:
 
 ```js
 const tracker = require("bangladeshi-parcel-tracker");
 
-const redxData = await tracker.redx("YOUR_TRACKING_NUMBER");
-const steadfastData = await tracker.steadfast("YOUR_TRACKING_NUMBER");
-const pathaoData = await tracker.pathao("YOUR_TRACKING_NUMBER", "+8801XXXXXXXXX");
-const rokomariData = await tracker.rokomari("YOUR_TRACKING_NUMBER", "+8801XXXXXXXXX");
-const sundarbanData = await tracker.sundarban("YOUR_TRACKING_NUMBER");
+async function main() {
+  const redxData = await tracker.redx("YOUR_TRACKING_NUMBER");
+  const steadfastData = await tracker.steadfast("YOUR_TRACKING_NUMBER");
+  const pathaoData = await tracker.pathao("YOUR_TRACKING_NUMBER", "+8801XXXXXXXXX");
+  const rokomariData = await tracker.rokomari("YOUR_TRACKING_NUMBER", "+8801XXXXXXXXX");
+  const sundarbanData = await tracker.sundarban("YOUR_TRACKING_NUMBER");
+}
+
+main();
 ```
 
-| Courier | Description | Required arguments | Request type in this package |
+| Courier | ID | Required arguments | Request type |
 | --- | --- | --- | --- |
-| RedX | Leading courier service in Bangladesh | tracking number | GET |
-| Steadfast | Reliable delivery solutions | tracking number | GET |
-| Pathao | Fast and efficient courier service | tracking number, phone | POST tracking lookup |
-| Rokomari | Book and product delivery specialist | tracking number, phone | GET tracking page |
-| Sundarban | Comprehensive logistics and courier solutions | tracking number | POST tracking lookup |
+| RedX | `redx` | tracking number | GET |
+| Steadfast | `steadfast` | tracking number | GET |
+| Pathao | `pathao` | tracking number, recipient phone | POST |
+| Rokomari | `rokomari` | tracking number, recipient phone | GET |
+| Sundarban | `sundarban` | tracking number | POST |
 
 These implementations use the unauthenticated tracking endpoints in the source snapshot. They are not official authenticated integrations; upstream changes, access controls, rate limits, or anti-bot checks may make them unavailable.
 
@@ -179,13 +205,22 @@ All failures reject with `TrackingError`, which exposes a stable `code`, safe `m
 | `ABORTED` | Caller cancelled using `AbortSignal` |
 
 ```js
+async function main() {
 try {
-  await tracker.track({ courier: "pathao", trackingNumber: "YOUR_TRACKING_NUMBER", phone: "+8801XXXXXXXXX" });
+  const result = await tracker.track({
+    courier: "pathao",
+    trackingNumber: "YOUR_TRACKING_NUMBER",
+    phone: "+8801XXXXXXXXX"
+  });
+  console.log(result.status.label);
 } catch (error) {
   if (error instanceof tracker.TrackingError) {
     console.error(error.code, error.retryable, error.message);
   }
 }
+}
+
+main();
 ```
 
 Error messages do not include response bodies, request URLs, phone numbers, or credentials. The library does not log request/response data.
@@ -207,137 +242,9 @@ const result: TrackResult = await tracker.track({
 
 The package ships `index.d.ts` with `Courier`, `StatusCode`, `TrackingOptions`, `TrackOptions`, `TrackInput`, `TrackResult`, `TrackingEvent`, `TrackingErrorCode`, and function declarations. It ships CommonJS (`main` and `require` export); the default import form works in Node ESM interoperability. This package does not ship a separately built native ESM bundle.
 
-## React project example
+## Use in a web application
 
-The package uses Node.js `fetch` and should run on the server, not in a browser bundle. In a React app, send the tracking request to your own backend; keep phone numbers and courier requests out of public client-side code where possible.
-
-### Node.js API server
-
-Install the package in the backend project with `npm install bangladeshi-parcel-tracker`, then create `server.cjs`:
-
-```js
-const http = require("node:http");
-const tracker = require("bangladeshi-parcel-tracker");
-
-const server = http.createServer(async (req, res) => {
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
-  if (req.method !== "POST" || req.url !== "/api/track") {
-    res.writeHead(404).end(JSON.stringify({ message: "Not found" }));
-    return;
-  }
-
-  try {
-    let body = "";
-    let bodyBytes = 0;
-    for await (const chunk of req) {
-      bodyBytes += Buffer.byteLength(chunk);
-      if (bodyBytes > 16_384) {
-        res.writeHead(413).end(JSON.stringify({ code: "PAYLOAD_TOO_LARGE", message: "Request body too large" }));
-        return;
-      }
-      body += chunk;
-    }
-    const input = JSON.parse(body);
-    const result = await tracker.track({
-      courier: input.courier,
-      trackingNumber: input.trackingNumber,
-      ...(input.phone ? { phone: input.phone } : {})
-    }, { timeoutMs: 10_000 });
-    res.writeHead(200).end(JSON.stringify(result));
-  } catch (error) {
-    const status = error.code === "INVALID_INPUT" || error.code === "UNSUPPORTED_COURIER" ? 400 : 502;
-    res.writeHead(status).end(JSON.stringify({
-      code: error.code || "INVALID_REQUEST",
-      message: error.message || "Tracking request failed"
-    }));
-  }
-});
-
-server.listen(3001, () => console.log("Tracking API listening on :3001"));
-```
-
-For production, add rate limiting and your app's authentication, and serve the API over HTTPS. Never put courier credentials or server configuration in React environment variables exposed to the browser.
-
-### React component
-
-This component calls the backend endpoint and displays the normalized result:
-
-```jsx
-import { useState } from "react";
-
-const couriers = ["redx", "steadfast", "pathao", "rokomari", "sundarban"];
-
-export default function ParcelTracker() {
-  const [courier, setCourier] = useState("redx");
-  const [trackingNumber, setTrackingNumber] = useState("");
-  const [phone, setPhone] = useState("");
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function submit(event) {
-    event.preventDefault();
-    setLoading(true);
-    setError("");
-    setResult(null);
-    try {
-      const response = await fetch("/api/track", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courier, trackingNumber, ...(phone ? { phone } : {}) })
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Tracking request failed");
-      setResult(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <section>
-      <form onSubmit={submit}>
-        <label>
-          Courier
-          <select value={courier} onChange={(event) => setCourier(event.target.value)}>
-            {couriers.map((name) => <option key={name} value={name}>{name}</option>)}
-          </select>
-        </label>
-        <label>
-          Tracking number
-          <input value={trackingNumber} onChange={(event) => setTrackingNumber(event.target.value)} required />
-        </label>
-        {["pathao", "rokomari"].includes(courier) && (
-          <label>
-            Recipient phone
-            <input value={phone} onChange={(event) => setPhone(event.target.value)} type="tel" required />
-          </label>
-        )}
-        <button disabled={loading}>{loading ? "Checking…" : "Track parcel"}</button>
-      </form>
-
-      {error && <p role="alert">{error}</p>}
-      {result && (
-        <article aria-live="polite">
-          <h2>{result.status.label}</h2>
-          <p>{result.courier}: {result.trackingNumber}</p>
-          {result.events.length > 0 && <ul>
-            {result.events.map((event, index) => (
-              <li key={`${event.timestamp || "event"}-${index}`}>
-                {event.timestamp || ""} {event.status || "Update"} {event.location || ""}
-              </li>
-            ))}
-          </ul>}
-        </article>
-      )}
-    </section>
-  );
-}
-```
-
-The recipient phone is required by the Pathao and Rokomari adapters. Other courier requirements and normalized status limitations are listed above.
+This package uses Node.js etch and should run on your server, not in browser code. In a React or other browser application, send tracking requests to your own backend. The [React demo](../../examples/react-demo/README.md) shows a working local setup.
 
 ## Development and tests
 
